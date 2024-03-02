@@ -2,6 +2,9 @@
 using System.Diagnostics;
 using System.IO.Compression;
 using System.Reflection;
+using System.Security.Cryptography.X509Certificates;
+using System.Text;
+using System.Security.Cryptography;
 
 namespace Testing
 {
@@ -9,25 +12,39 @@ namespace Testing
     {
         static void Main()
         {
-            Test.Hub();
+            Console.WriteLine(Test.Hub(@"C:\Main\Cs\SCP\Tests\Project\Assets\random.svg"));
+            Console.WriteLine(Test.Hub_s(@"C:\Main\Cs\SCP\Tests\Project\Assets\random.svg"));
         }
     }
     public class Test
     {
-        public static void Hub()
+        public static string Hub(string filePath)
         {
-            Assembly assembly = Assembly.LoadFrom(@"C:\WinTools\Extensions\supp\Bowl.dll");
-            Type type = assembly.GetTypes()[0];
-            var obj = Activator.CreateInstance(type);
-            MethodInfo method = type.GetMethod("SaveString");
-            method.Invoke(obj, new object[] { "testString", "testVar", @"D:\Main\test.bgdf" });
-            MethodInfo read = type.GetMethod("ReadString");
-            string result = (string)read.Invoke(obj, new object[] { "testVar", @"D:\Main\test.bgdf" });
-            return;
+            byte[] tmpSource;
+            byte[] tmpHash;
+            tmpSource = File.ReadAllBytes(filePath);
+            tmpHash = new MD5CryptoServiceProvider().ComputeHash(tmpSource);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < tmpHash.Length; i++)
+            {
+                sb.Append(tmpHash[i].ToString("x2"));
+            }
+
+            return sb.ToString();
         }
-        public void Setup()
+        public static string Hub_s(string filePath)
         {
-            return;
+            byte[] tmpSource;
+            byte[] tmpHash;
+            tmpSource = ASCIIEncoding.ASCII.GetBytes(File.ReadAllText(filePath));
+            tmpHash = new MD5CryptoServiceProvider().ComputeHash(tmpSource);
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < tmpHash.Length; i++)
+            {
+                sb.Append(tmpHash[i].ToString("x2"));
+            }
+
+            return sb.ToString();
         }
     }
 }

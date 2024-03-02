@@ -131,11 +131,11 @@ namespace TestConsole
                 case "show":
                     ShowGames();
                     break;
-                case "install":
+                case "saven":
                     if (input[2].Substring(0,1) == "@")
                     {
                         //no naming
-                        if(input_s.Substring(input_s.Length -5) == ".zip")
+                        if (input_s.Substring(input_s.Length - 4) == ".zip")
                         {
                             GetGameFromZip(CombineStrings(input, 2).Substring(1));
                         }

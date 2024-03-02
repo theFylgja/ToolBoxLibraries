@@ -1,182 +1,270 @@
 using System;
 using System.IO;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 using System.Linq;
+using System.Threading;
 
 namespace BiomeLibrary
 {
     public class Bowl
     {
-        //write methods
-        public static void SaveString(string data, string name, string path)
+        //Attributes
+        public string Path { get; set; }
+
+        //accessible methods(non private plus all non static)
+        public bool Exists(string name)
         {
-            Var var = new Var(name, data, Type.String, DataType.SingleValue);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            List<string> names = GetAllNames().ToList<string>();
+            return names.Contains(name);
         }
-        public static void SaveInt(int data, string name, string path)
+        public void Set(string name, string data)
         {
-            Var var = new Var(name, data.ToString(), Type.String, DataType.SingleValue);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            if (!Exists(name))
+            {
+                Create(name, data, Type.String, DataType.SingleValue);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = data;
+                }
+            }
+            SaveVarArray(vars);
         }
-        public static void SaveDouble(double data, string name, string path)
+        public void Set(string name, int data)
         {
-            Var var = new Var(name, data.ToString(), Type.String, DataType.SingleValue);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            if (!Exists(name))
+            {
+                Create(name, data.ToString(), Type.Integer, DataType.SingleValue);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = data.ToString();
+                    vars[i].ValueType = Type.Integer;
+                    vars[i].KindOfData = DataType.SingleValue;
+                }
+            }
+            SaveVarArray(vars);
         }
-        public static void SaveBool(bool data, string name, string path)
+        public void Set(string name, double data)
         {
-            string data_string;
-            if (data) { data_string = "true"; } else { data_string = "false"; }
-            Var var = new Var(name, data_string, Type.String, DataType.SingleValue);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            if (!Exists(name))
+            {
+                Create(name, data.ToString(), Type.Double, DataType.SingleValue);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = data.ToString();
+                }
+            }
+            SaveVarArray(vars);
+        }
+        public void Set(string name, bool data)
+        {
+            if (!Exists(name))
+            {
+                Create(name, BoolToString(data), Type.Boolean, DataType.SingleValue);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = BoolToString(data);
+                    vars[i].ValueType = Type.Boolean;
+                    vars[i].KindOfData = DataType.SingleValue;
+                }
+            }
+            SaveVarArray(vars);
+        }
+        public void Set(string name, string[] data)
+        {
+            if (!Exists(name))
+            {
+                Create(name, ArrayToString(data), Type.String, DataType.Array);
+                return;
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = ArrayToString(data);
+                }
+            }
+            SaveVarArray(vars);
+        }
+        public void Set(string name, bool[] data)
+        {
+            string[] strings = new string[data.Length];
+            for (int j = 0; j < strings.Length; j++)
+            {
+                strings[j] = BoolToString(data[j]);
+            }
+
+            if (!Exists(name))
+            {
+                Create(name, ArrayToString(strings), Type.Boolean, DataType.Array);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = ArrayToString(strings);
+                }
+            }
+            SaveVarArray(vars);
+        }
+        public void Set(string name, int[] data)
+        {
+            object[] objs = new object[data.Length];
+            for (int i = 0; i < objs.Length; i++)
+            {
+                objs[i] = (object)data[i];
+            }
+
+            if (!Exists(name))
+            {
+                Create(name, ArrayToString(ToStringArray(objs)), Type.Integer, DataType.Array);
+            }
+            Var[] vars = GetAsVarArray();
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = ArrayToString(ToStringArray(objs));
+                }
+            }
+            SaveVarArray(vars);
+        }
+        public void Set(string name, double[] data)
+        {
+            object[] objs = new object[data.Length];
+            for (int i = 0; i < objs.Length; i++)
+            {
+                objs[i] = (object)data[i];
+            }
+
+            if (!Exists(name))
+            {
+                Create(name, ArrayToString(ToStringArray(objs)), Type.Double, DataType.Array);
+            }
+            Var[] vars = GetAsVarArray();
+
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    vars[i].Value = ArrayToString(ToStringArray(objs));
+                }
+            }
+            SaveVarArray(vars);
         }
 
-        //array write methods
-        public static void SaveStringArray(string[] data, string name, string path)
+        //Get-methods
+        public object Get(string name)
         {
-            string data_string = ArrayToString(data);
-            Var var = new Var(name, data_string, Type.String, DataType.Array);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            Var[] vars = GetAsVarArray();
+            Var var = null;
+            bool isArray = false;
+            for (int i = 0; i < vars.Length; i++)
+            {
+                if (vars[i].Name == name)
+                {
+                    var = vars[i];
+                    break;
+                }
+            }
+            if (var == null)
+            { return null; }
+
+            switch (var.KindOfData)
+            {
+                case DataType.SingleValue:
+
+                    switch (var.ValueType)
+                    {
+                        case Type.String:
+                            return (object)var.Value;
+                        case Type.Boolean:
+                            return (object)ToBool(var.Value);
+                        case Type.Integer:
+                            return (object)Convert.ToInt32(var.Value);
+                        case Type.Double:
+                            return (object)Convert.ToDouble(var.Value);
+                    }
+                    break;
+                case DataType.Array:
+
+                    switch (var.ValueType)
+                    {
+                        case Type.String:
+                            return (object)GetStringArray(var.Value);
+                        case Type.Boolean:
+                            return (object)GetBoolArray(var.Value);
+                        case Type.Integer:
+                            return (object)GetIntArray(var.Value);
+                        case Type.Double:
+                            return (object)GetDoubleArray(var.Value);
+                    }
+                    break;
+            }
+            return null;
         }
-        public static void SaveIntArray(int[] data, string name, string path)
+        //private read-write methods
+        private void Create(string name, string data, Type type, DataType dataType)
         {
-            string data_string = ArrayToString(ToStringArray(data));
-            Var var = new Var(name, data_string, Type.Integer, DataType.Array);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
-        }
-        public static void SaveBoolArray(bool[] data, string name, string path)
-        {
-            string data_string = ArrayToString(ToStringArray(data));
-            Var var = new Var(name, data_string, Type.Boolean, DataType.Array);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
-        }
-        public static void SaveDoubleArray(double[] data, string name, string path)
-        {
-            string data_string = ArrayToString(ToStringArray(data));
-            Var var = new Var(name, data_string, Type.Double, DataType.Array);
-            string previousFileContent = File.ReadAllText(path);
-            File.WriteAllText(path, previousFileContent + VarToString(var));
+            List<Var> file = GetAsVarArray().ToList<Var>();
+            file.Add(new Var(name, data, type, dataType));
+            string[] file_s = new string[file.Count];
+            for(int i = 0; i < file.Count; i++)
+            {
+                file_s[i] = VarToString(file[i]);
+            }
+            File.WriteAllLines(Path, file_s);
         }
 
-        //read methods
-        public static string ReadString(string name, string path)
+        //constructor
+        public Bowl(string path)
         {
-            Var var = GetVar(name, path);
-            return var?.Value;
+            if (!File.Exists(path)) 
+            {
+                File.Create(path).Close();
+            }
+
+            Path = path;
         }
-        public static int ReadInt(string name, string path)
+
+
+
+        //support methods
+        private bool ToBool(string input)
         {
-            Var var = GetVar(name, path);
-            return Convert.ToInt32(var?.Value);
-        }
-        public static bool ReadBool(string name, string path)
-        {
-            Var var = GetVar(name, path);
-            if (var.Value == "true")
+            if (input == "true")
             {
                 return true;
             }
             return false;
         }
-        public static double ReadDouble(string name, string path)
+        private string BoolToString(bool input)
         {
-            Var var = GetVar(name, path);
-            return Convert.ToDouble(var?.Value);
-        }
-
-        //array read methods
-        public static int[] ReadIntArray(string name, string path)
-        {
-            Var var = GetVar(name, path);
-            return GetIntArray(var?.Value);
-        }
-        public static double[] ReadDoubleArray(string name, string path)
-        {
-            Var var = GetVar(name, path);
-            return GetDoubleArray(var?.Value);
-        }
-        public static bool[] ReadBoolArray(string name, string path)
-        {
-            Var var = GetVar(name, path);
-            return GetBoolArray(var?.Value);
-        }
-        public static string[] ReadStringArray(string name, string path)
-        {
-            Var var = GetVar(name, path);
-            return GetStringArray(var?.Value);
-        }
-
-        //replace/rewrite methods
-        public static void RewriteString(string name, string data, string path)
-        {
-            Remove(name, path);
-            SaveString(data, name, path);
-        }
-        public static void RewriteInt(string name, int data, string path)
-        {
-            Remove(name, path);
-            SaveInt(data, name, path);
-        }
-        public static void RewriteDouble(string name, double data, string path)
-        {
-            Remove(name, path);
-            SaveDouble(data, name, path);
-        }
-        public static void RewriteBool(string name, bool data, string path)
-        {
-            Remove(name, path);
-            SaveBool(data, name, path);
-        }
-        public static void RewriteBoolArray(string name, bool[] data, string path)
-        {
-            Remove(name, path);
-            SaveBoolArray(data, name, path);
-        }
-        public static void RewriteDoubleArray(string name, double[] data, string path)
-        {
-            Remove(name, path);
-            SaveDoubleArray(data, name, path);
-        }
-        public static void RewriteIntArray(string name, int[] data, string path)
-        {
-            Remove(name, path);
-            SaveIntArray(data, name, path);
-        }
-        public static void RewriteStringArray(string name, string[] data, string path)
-        {
-            Remove(name, path);
-            SaveStringArray(data, name, path);
-        }
-
-        //remove methods
-        public static void Remove(string name, string path)
-        {
-            string[] oldFile = ReadAllString(path);
-            List<string> file = new List<string>();
-            string result = "";
-            for (int i = 0; i < oldFile.Length; i++)
+            if (input)
             {
-                if (GetName(oldFile[i]) != name)
-                {
-                    file.Add(oldFile[i]);
-                }
+                return "true";
             }
-            for (int i = 0; i < file.Count; i++)
-            {
-                result = result + file[i];
-            }
-            File.WriteAllText(path, result);
+            return "false";
         }
-
-        //support methods
-        private static int[] GetIntArray(string input)
+        private int[] GetIntArray(string input)
         {
             List<int> output = new List<int>();
             char[] asChar = input.ToCharArray();
@@ -197,7 +285,7 @@ namespace BiomeLibrary
             }
             return output.ToArray();
         }
-        private static string[] GetStringArray(string input)
+        private string[] GetStringArray(string input)
         {
             List<string> output = new List<string>();
             char[] asChar = input.ToCharArray();
@@ -218,7 +306,7 @@ namespace BiomeLibrary
             }
             return output.ToArray();
         }
-        private static double[] GetDoubleArray(string input)
+        private double[] GetDoubleArray(string input)
         {
             List<double> output = new List<double>();
             char[] asChar = input.ToCharArray();
@@ -240,7 +328,7 @@ namespace BiomeLibrary
             }
             return output.ToArray();
         }
-        private static bool[] GetBoolArray(string input)
+        private bool[] GetBoolArray(string input)
         {
             List<bool> output = new List<bool>();
             char[] asChar = input.ToCharArray();
@@ -275,7 +363,7 @@ namespace BiomeLibrary
             }
             return output.ToArray();
         }
-        private static string ArrayToString(string[] array)
+        private string ArrayToString(string[] array)
         {
             string result = "";
             for (int i = 0; i < array.Length; i++)
@@ -284,7 +372,7 @@ namespace BiomeLibrary
             }
             return result.Substring(1) + ".";
         }
-        private static string[] ToStringArray(int[] array)
+        private string[] ToStringArray(object[] array)
         {
             string[] result = new string[array.Length];
             for (int i = 0; i < array.Length; i++)
@@ -293,25 +381,7 @@ namespace BiomeLibrary
             }
             return result;
         }
-        private static string[] ToStringArray(bool[] array)
-        {
-            string[] result = new string[array.Length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                result[i] = array[i].ToString();
-            }
-            return result;
-        }
-        private static string[] ToStringArray(double[] array)
-        {
-            string[] result = new string[array.Length];
-            for (int i = 0; i < array.Length; i++)
-            {
-                result[i] = array[i].ToString();
-            }
-            return result;
-        }
-        private static string GetName(string line)
+        private string GetName(string line)
         {
             string str = "'"; char sign = str.ToCharArray()[0];
             char[] asChar = line.ToCharArray();
@@ -332,10 +402,9 @@ namespace BiomeLibrary
                     }
                 }
             }
-            Console.WriteLine(line.Substring(start + 1, end - start - 1));
             return line.Substring(start + 1, end - start - 1);
         }
-        private static string VarToString(Var input)
+        private string VarToString(Var input)
         {
             string valueType_string;
             string dataType_string;
@@ -375,9 +444,9 @@ namespace BiomeLibrary
             return "$" + dataType_string + "<" + valueType_string + ">'" + input.Name + "'('" + input.Value + "');";
         }
 
-        private static Var[] GetAsVarArray(string path)
+        private Var[] GetAsVarArray()
         {
-            string[] asString = File.ReadAllLines(path);
+            string[] asString = File.ReadAllLines(Path);
             Var[] output = new Var[asString.Length];
             for (int i = 0; i < asString.Length; i++)
             {
@@ -385,9 +454,9 @@ namespace BiomeLibrary
             }
             return output;
         }
-        private static Var GetVar(string name, string path)
+        private Var GetVar(string name)
         {
-            string[] file = ReadAllString(path);
+            string[] file = ReadAllString();
             string line;
             for (int i = 0; i < file.Length; i++)
             {
@@ -401,10 +470,10 @@ namespace BiomeLibrary
             return null;
 
         }
-        private static string[] ReadAllString(string path)
+        private string[] ReadAllString()
         {
             List<string> fileList = new List<string>();
-            string file = File.ReadAllText(path);
+            string file = File.ReadAllText(Path);
             char[] file_char = file.ToCharArray();
             int last = 0;
             for (int i = 0; i < file_char.Length; i++)
@@ -417,17 +486,28 @@ namespace BiomeLibrary
             }
             return fileList.ToArray();
         }
-        public static string[] GetAllNames(string path)
+        public string[] GetAllNames()
         {
-            string[] lines = ReadAllString(path);
+            string[] lines = ReadAllString();
             string[] names = new string[lines.Length];
-            for(int i = 0; i < lines.Length; i++)
+            for (int i = 0; i < lines.Length; i++)
             {
                 names[i] = GetName(lines[i]);
             }
             return names;
         }
+        public void SaveVarArray(Var[] input)
+        {
+            string[] file = new string[input.Length];
+            for (int i = 0; i < input.Length; i++)
+            {
+                file[i] = VarToString(input[i]);
+            }
+            File.WriteAllLines(Path, file);
+        }
     }
+
+
     public class Var
     {
         public string Name { get; set; }
@@ -484,8 +564,8 @@ namespace BiomeLibrary
             }
             Name = line.Substring(points[2] + 1, points[3] - points[2] - 1);
             Value = line.Substring(points[4] + 2, points[5] - points[4] - 3);
-            string temp;
-            switch (temp = line.Substring(points[0], points[1] - points[0]))
+            string temp = line.Substring(points[0] + 1, points[1] - points[0] - 1);
+            switch (temp)
             {
                 case "string":
                     ValueType = Type.String;
@@ -503,7 +583,8 @@ namespace BiomeLibrary
                     ValueType = Type.String;
                     break;
             }
-            switch (temp = line.Substring(1, points[0] - 2))
+            temp = line.Substring(1, points[0] - 1);
+            switch (temp)
             {
                 case "var":
                     KindOfData = DataType.SingleValue;
